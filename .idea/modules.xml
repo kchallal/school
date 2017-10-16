@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/school-api.iml" filepath="$PROJECT_DIR$/.idea/modules/school-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/school-api_main.iml" filepath="$PROJECT_DIR$/.idea/modules/school-api_main.iml" group="school-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/school-api_test.iml" filepath="$PROJECT_DIR$/.idea/modules/school-api_test.iml" group="school-api" />
+    </modules>
+  </component>
+</project>
