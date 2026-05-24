@@ -1,0 +1,223 @@
+import { useNavigate } from 'react-router-dom'
+import { useStore } from '../store/useStore'
+import { MILESTONES } from '../data/milestones'
+import { formatDate, fromDateKey, addDays } from '../utils/dateUtils'
+
+function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+  return (
+    <div className="bg-surface rounded-2xl p-4 flex flex-col gap-1">
+      <p className="text-muted text-xs uppercase tracking-wide">{label}</p>
+      <p className="text-white text-2xl font-bold">{value}</p>
+      {sub && <p className="text-muted text-xs">{sub}</p>}
+    </div>
+  )
+}
+
+function OrganProgressBar({ label, icon, percent }: { label: string; icon: string; percent: number }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xl w-7">{icon}</span>
+      <div className="flex-1">
+        <div className="flex justify-between mb-1">
+          <span className="text-sm text-gray-300">{label}</span>
+          <span className="text-sm text-accent font-medium">{percent}%</span>
+        </div>
+        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-accent rounded-full transition-all duration-700"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function getOrganRecovery(daysSober: number): { label: string; icon: string; percent: number }[] {
+  const clamp = (v: number) => Math.min(100, Math.max(0, v))
+  return [
+    {
+      label: 'Foie',
+      icon: '🫁',
+      percent: clamp(
+        daysSober < 3 ? daysSober * 5
+        : daysSober < 30 ? 15 + (daysSober - 3) * 2
+        : daysSober < 90 ? 70 + (daysSober - 30) * 0.5
+        : 100
+      ),
+    },
+    {
+      label: 'Cerveau',
+      icon: '🧠',
+      percent: clamp(
+        daysSober < 7 ? daysSober * 3
+        : daysSober < 30 ? 21 + (daysSober - 7) * 2
+        : daysSober < 90 ? 67 + (daysSober - 30) * 0.5
+        : 97
+      ),
+    },
+    {
+      label: 'Coeur',
+      icon: '❤️',
+      percent: clamp(
+        daysSober < 7 ? daysSober * 5
+        : daysSober < 14 ? 35 + (daysSober - 7) * 5
+        : daysSober < 90 ? 70 + (daysSober - 14) * 0.4
+        : 100
+      ),
+    },
+    {
+      label: 'Sommeil',
+      icon: '😴',
+      percent: clamp(
+        daysSober < 7 ? daysSober * 6
+        : daysSober < 30 ? 42 + (daysSober - 7) * 2.5
+        : 100
+      ),
+    },
+    {
+      label: 'Peau',
+      icon: '✨',
+      percent: clamp(
+        daysSober < 7 ? daysSober * 8
+        : daysSober < 30 ? 56 + (daysSober - 7) * 2
+        : 100
+      ),
+    },
+  ]
+}
+
+function getNextMilestone(daysSober: number) {
+  return MILESTONES.find((m) => m.days > daysSober) ?? null
+}
+
+function getCurrentMilestone(daysSober: number) {
+  const reached = MILESTONES.filter((m) => m.days <= daysSober)
+  return reached[reached.length - 1] ?? null
+}
+
+export default function Dashboard() {
+  const navigate = useNavigate()
+  const profile = useStore((s) => s.profile)
+  const getDaysSinceStart = useStore((s) => s.getDaysSinceStart)
+  const getSoberDays = useStore((s) => s.getSoberDays)
+  const getCurrentStreak = useStore((s) => s.getCurrentStreak)
+  const getLongestStreak = useStore((s) => s.getLongestStreak)
+  const getSoberRate = useStore((s) => s.getSoberRate)
+  const getMonthlySavings = useStore((s) => s.getMonthlySavings)
+  const getTotalSavings = useStore((s) => s.getTotalSavings)
+
+  if (!profile) return null
+
+  const daysSinceStart = getDaysSinceStart()
+  const soberDays = getSoberDays()
+  const currentStreak = getCurrentStreak()
+  const longestStreak = getLongestStreak()
+  const soberRate = getSoberRate()
+  const monthlySavings = getMonthlySavings()
+  const totalSavings = getTotalSavings()
+  const organs = getOrganRecovery(soberDays)
+  const nextMilestone = getNextMilestone(soberDays)
+  const currentMilestone = getCurrentMilestone(soberDays)
+  const startDate = addDays(fromDateKey(profile.lastDrinkDate), 1)
+
+  const daysUntilNext = nextMilestone ? Math.ceil(nextMilestone.days - soberDays) : null
+
+  return (
+    <div className="min-h-screen bg-base text-white pb-24">
+      <div className="max-w-md mx-auto px-5 py-8">
+
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
+          <p className="text-muted text-sm mt-1">Depuis le {formatDate(startDate)}</p>
+        </div>
+
+        {/* Main stat */}
+        <div className="bg-surface-2 border border-accent/20 rounded-3xl p-6 mb-5 text-center">
+          <p className="text-muted text-sm uppercase tracking-widest mb-2">Jours sobres</p>
+          <p className="text-7xl font-bold text-accent mb-2">{soberDays}</p>
+          <p className="text-muted text-sm">sur {daysSinceStart} jour{daysSinceStart > 1 ? 's' : ''} depuis le début</p>
+        </div>
+
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <StatCard
+            label="Série actuelle"
+            value={`${currentStreak} j`}
+            sub="jours consécutifs"
+          />
+          <StatCard
+            label="Meilleure série"
+            value={`${longestStreak} j`}
+            sub="record personnel"
+          />
+          <StatCard
+            label="Taux de sobriété"
+            value={`${soberRate}%`}
+            sub="des jours depuis le début"
+          />
+          <StatCard
+            label="Étape actuelle"
+            value={currentMilestone?.label ?? '–'}
+            sub={currentMilestone ? '✓ atteinte' : 'En cours'}
+          />
+        </div>
+
+        {/* Next milestone */}
+        {nextMilestone && (
+          <div className="bg-surface rounded-2xl p-5 mb-5">
+            <p className="text-muted text-xs uppercase tracking-wide mb-3">Prochaine étape</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white font-semibold">{nextMilestone.label}</p>
+              <p className="text-accent text-sm font-medium">Dans {daysUntilNext} jour{daysUntilNext !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-accent rounded-full"
+                style={{ width: `${Math.min(100, (soberDays / nextMilestone.days) * 100)}%` }}
+              />
+            </div>
+            <p className="text-muted text-xs mt-2">{nextMilestone.summary}</p>
+          </div>
+        )}
+
+        {/* Organ recovery */}
+        <div className="bg-surface rounded-2xl p-5 mb-5">
+          <p className="text-muted text-xs uppercase tracking-wide mb-4">Récupération estimée</p>
+          <div className="space-y-4">
+            {organs.map((o) => (
+              <OrganProgressBar key={o.label} {...o} />
+            ))}
+          </div>
+          <p className="text-muted text-xs mt-4">Estimations basées sur des données médicales moyennes — les résultats individuels varient.</p>
+        </div>
+
+        {/* Savings */}
+        {monthlySavings > 0 && (
+          <div className="bg-surface rounded-2xl p-5 mb-5">
+            <p className="text-muted text-xs uppercase tracking-wide mb-4">Économies</p>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-3xl font-bold text-accent">{totalSavings} €</p>
+                <p className="text-muted text-xs mt-1">économisés depuis le début</p>
+              </div>
+              <div className="text-right">
+                <p className="text-white font-semibold">{Math.round(monthlySavings)} €</p>
+                <p className="text-muted text-xs">par mois estimé</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* History link */}
+        <button
+          onClick={() => navigate('/history')}
+          className="w-full text-center text-muted text-sm py-2 underline underline-offset-4"
+        >
+          Voir l'historique complet →
+        </button>
+      </div>
+    </div>
+  )
+}
