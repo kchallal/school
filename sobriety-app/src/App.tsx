@@ -7,6 +7,7 @@ import SOS from './screens/SOS'
 import Milestones from './screens/Milestones'
 import Knowledge from './screens/Knowledge'
 import History from './screens/History'
+import EditBudget from './screens/EditBudget'
 
 function AppShell() {
   const profile = useStore((s) => s.profile)
@@ -27,6 +28,7 @@ function AppShell() {
         <Route path="/milestones" element={<Milestones />} />
         <Route path="/knowledge" element={<Knowledge />} />
         <Route path="/history" element={<History />} />
+        <Route path="/edit-budget" element={<EditBudget />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />

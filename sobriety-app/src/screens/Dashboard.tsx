@@ -194,9 +194,17 @@ export default function Dashboard() {
         </div>
 
         {/* Savings */}
-        {monthlySavings > 0 && (
-          <div className="bg-surface rounded-2xl p-5 mb-5">
-            <p className="text-muted text-xs uppercase tracking-wide mb-4">Économies</p>
+        <div className="bg-surface rounded-2xl p-5 mb-5">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-muted text-xs uppercase tracking-wide">Économies</p>
+            <button
+              onClick={() => navigate('/edit-budget')}
+              className="text-accent text-xs underline underline-offset-2"
+            >
+              {monthlySavings > 0 ? 'Modifier' : 'Configurer'}
+            </button>
+          </div>
+          {monthlySavings > 0 ? (
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-3xl font-bold text-accent">{totalSavings} €</p>
@@ -207,8 +215,15 @@ export default function Dashboard() {
                 <p className="text-muted text-xs">par mois estimé</p>
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <button
+              onClick={() => navigate('/edit-budget')}
+              className="w-full border border-dashed border-gray-600 rounded-xl py-4 text-muted text-sm"
+            >
+              + Ajouter ta consommation habituelle
+            </button>
+          )}
+        </div>
 
         {/* History link */}
         <button
