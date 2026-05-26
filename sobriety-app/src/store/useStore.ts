@@ -26,10 +26,12 @@ export interface Profile {
 interface AppState {
   profile: Profile | null
   events: SOSEvent[]
+  celebratedMilestones: string[]
 
   // Actions
   setProfile: (p: Profile) => void
   recordSOS: (resisted: boolean, drinkCount?: number) => void
+  celebrateMilestone: (id: string) => void
   reset: () => void
 
   // Derived getters
@@ -52,8 +54,12 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       profile: null,
       events: [],
+      celebratedMilestones: [],
 
       setProfile: (p) => set({ profile: p }),
+
+      celebrateMilestone: (id) =>
+        set((s) => ({ celebratedMilestones: [...s.celebratedMilestones, id] })),
 
       recordSOS: (resisted, drinkCount) => {
         const event: SOSEvent = {
@@ -66,7 +72,7 @@ export const useStore = create<AppState>()(
         set((s) => ({ events: [...s.events, event] }))
       },
 
-      reset: () => set({ profile: null, events: [] }),
+      reset: () => set({ profile: null, events: [], celebratedMilestones: [] }),
 
       getDaysSinceStart: () => {
         const { profile } = get()

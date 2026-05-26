@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { SOS_MESSAGES, getRandomAlternatives } from '../data/sosMessages'
+import { fireResistConfetti } from '../utils/confetti'
+import FloatingEmojis from '../components/FloatingEmojis'
 
 const TIMER_SECONDS = 15 * 60
 
@@ -66,6 +68,7 @@ export default function SOS() {
 
   function handleResisted() {
     recordSOS(true)
+    fireResistConfetti()
     setOutcome('resisted')
   }
 
@@ -87,15 +90,19 @@ export default function SOS() {
 
   if (outcome === 'resisted') {
     return (
-      <div className="min-h-screen bg-base flex flex-col items-center justify-center px-6 text-center">
-        <div className="text-6xl mb-6">🌿</div>
-        <h2 className="text-2xl font-bold text-accent mb-3">Noté.</h2>
-        <p className="text-gray-300 max-w-xs leading-relaxed mb-8">
-          Tu as résisté. Ce n'est pas petit. Ton corps continue son travail.
+      <div className="min-h-screen bg-base flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
+        <FloatingEmojis emojis={['🌿', '✨', '💪', '🏆', '⭐']} count={14} />
+        <div className="text-7xl mb-6 animate-bounce-slow">🌿</div>
+        <h2 className="text-3xl font-bold text-accent mb-3">Tu as résisté.</h2>
+        <p className="text-gray-300 max-w-xs leading-relaxed mb-2">
+          Ce n'est pas rien. Ton corps continue son travail.
+        </p>
+        <p className="text-muted text-sm mb-10">
+          Série actuelle : <span className="text-accent font-semibold">{streak} jour{streak > 1 ? 's' : ''}</span>
         </p>
         <button
           onClick={() => navigate('/')}
-          className="bg-accent text-gray-900 font-semibold py-4 px-8 rounded-2xl"
+          className="bg-accent text-gray-900 font-semibold py-4 px-8 rounded-2xl text-base"
         >
           Retour au tableau de bord
         </button>

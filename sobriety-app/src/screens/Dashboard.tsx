@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { MILESTONES } from '../data/milestones'
+import { MILESTONES, Milestone } from '../data/milestones'
 import { formatDate, fromDateKey, addDays } from '../utils/dateUtils'
+import MilestoneCelebration from '../components/MilestoneCelebration'
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -106,6 +108,10 @@ export default function Dashboard() {
   const getSoberRate = useStore((s) => s.getSoberRate)
   const getMonthlySavings = useStore((s) => s.getMonthlySavings)
   const getTotalSavings = useStore((s) => s.getTotalSavings)
+  const celebratedMilestones = useStore((s) => s.celebratedMilestones)
+  const celebrateMilestone = useStore((s) => s.celebrateMilestone)
+
+  const [pendingCelebration, setPendingCelebration] = useState<Milestone | null>(null)
 
   if (!profile) return null
 
@@ -120,11 +126,29 @@ export default function Dashboard() {
   const nextMilestone = getNextMilestone(soberDays)
   const currentMilestone = getCurrentMilestone(soberDays)
   const startDate = addDays(fromDateKey(profile.lastDrinkDate), 1)
-
   const daysUntilNext = nextMilestone ? Math.ceil(nextMilestone.days - soberDays) : null
+
+  // Detect newly reached milestones on mount
+  useEffect(() => {
+    const reached = MILESTONES.filter((m) => soberDays >= m.days)
+    const uncelebrated = reached.find((m) => !celebratedMilestones.includes(m.id))
+    if (uncelebrated) {
+      setTimeout(() => setPendingCelebration(uncelebrated), 800)
+    }
+  }, [])
+
+  function handleCloseCelebration() {
+    if (pendingCelebration) {
+      celebrateMilestone(pendingCelebration.id)
+      setPendingCelebration(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-base text-white pb-24">
+      {pendingCelebration && (
+        <MilestoneCelebration milestone={pendingCelebration} onClose={handleCloseCelebration} />
+      )}
       <div className="max-w-md mx-auto px-5 py-8">
 
         {/* Header */}
@@ -136,7 +160,7 @@ export default function Dashboard() {
         {/* Main stat */}
         <div className="bg-surface-2 border border-accent/20 rounded-3xl p-6 mb-5 text-center">
           <p className="text-muted text-sm uppercase tracking-widest mb-2">Jours sobres</p>
-          <p className="text-7xl font-bold text-accent mb-2">{soberDays}</p>
+          <p className="text-7xl font-bold text-accent mb-2 animate-pulse-once">{soberDays}</p>
           <p className="text-muted text-sm">sur {daysSinceStart} jour{daysSinceStart > 1 ? 's' : ''} depuis le début</p>
         </div>
 
