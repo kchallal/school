@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore'
 import { MILESTONES, Milestone } from '../data/milestones'
 import { formatDate, fromDateKey, addDays } from '../utils/dateUtils'
 import MilestoneCelebration from '../components/MilestoneCelebration'
+import { ORGAN_ACTIVITIES, getTimeSlot, getTimeLabel } from '../data/organRealtime'
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -206,7 +207,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Organ recovery */}
+        {/* Organ recovery bars */}
         <div className="bg-surface rounded-2xl p-5 mb-5">
           <p className="text-muted text-xs uppercase tracking-wide mb-4">Récupération estimée</p>
           <div className="space-y-4">
@@ -214,8 +215,37 @@ export default function Dashboard() {
               <OrganProgressBar key={o.label} {...o} />
             ))}
           </div>
-          <p className="text-muted text-xs mt-4">Estimations basées sur des données médicales moyennes — les résultats individuels varient.</p>
+          <p className="text-muted text-xs mt-4">Estimations basées sur des données médicales moyennes.</p>
         </div>
+
+        {/* Real-time organ activities */}
+        {(() => {
+          const slot = getTimeSlot()
+          const activities = ORGAN_ACTIVITIES[slot]
+          const label = getTimeLabel(slot)
+          return (
+            <div className="mb-5">
+              <p className="text-muted text-xs uppercase tracking-wide mb-3 px-1">{label} — ce que font tes organes</p>
+              <div className="space-y-3">
+                {activities.map((a) => (
+                  <div key={a.organ} className="bg-surface rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">{a.icon}</span>
+                      <span className="text-white text-sm font-semibold">{a.organ}</span>
+                    </div>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-3">{a.activity}</p>
+                    <div className="border-t border-gray-700 pt-3">
+                      <p className="text-muted text-xs leading-relaxed">
+                        <span className="text-danger/80 font-medium">Avec de l'alcool · </span>
+                        {a.contrast}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Savings */}
         <div className="bg-surface rounded-2xl p-5 mb-5">
