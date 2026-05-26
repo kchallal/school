@@ -13,8 +13,16 @@ export default function EditBudget() {
 
   const [bottles, setBottles] = useState<Bottle[]>(profile?.bottles ?? [])
   const [newBottle, setNewBottle] = useState({ name: '', pricePerUnit: '', unitsPerWeek: '1' })
+  const [saved, setSaved] = useState(false)
 
   if (!profile) return null
+
+  function persist(updated: Bottle[]) {
+    setBottles(updated)
+    setProfile({ lastDrinkDate: profile!.lastDrinkDate, lastDrinkCount: profile!.lastDrinkCount, bottles: updated })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1500)
+  }
 
   function addBottle() {
     if (!newBottle.name || !newBottle.pricePerUnit) return
@@ -24,18 +32,12 @@ export default function EditBudget() {
       pricePerUnit: parseFloat(newBottle.pricePerUnit),
       unitsPerWeek: parseFloat(newBottle.unitsPerWeek) || 1,
     }
-    setBottles((prev) => [...prev, b])
+    persist([...bottles, b])
     setNewBottle({ name: '', pricePerUnit: '', unitsPerWeek: '1' })
   }
 
   function removeBottle(id: string) {
-    setBottles((prev) => prev.filter((b) => b.id !== id))
-  }
-
-  function save() {
-    if (!profile) return
-    setProfile({ lastDrinkDate: profile.lastDrinkDate, lastDrinkCount: profile.lastDrinkCount, bottles })
-    navigate('/')
+    persist(bottles.filter((b) => b.id !== id))
   }
 
   const monthly = bottles.reduce((sum, b) => sum + b.pricePerUnit * b.unitsPerWeek * 4.33, 0)
@@ -43,9 +45,12 @@ export default function EditBudget() {
   return (
     <div className="min-h-screen bg-base text-white pb-24">
       <div className="max-w-md mx-auto px-5 py-8">
-        <button onClick={() => navigate('/')} className="text-muted text-sm flex items-center gap-1 mb-6">
-          ← Retour
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={() => navigate('/')} className="text-muted text-sm flex items-center gap-1">
+            ← Retour
+          </button>
+          {saved && <span className="text-accent text-xs">✓ Sauvegardé</span>}
+        </div>
 
         <h1 className="text-2xl font-bold mb-2">Consommation habituelle</h1>
         <p className="text-muted text-sm mb-6">
@@ -69,8 +74,16 @@ export default function EditBudget() {
           </div>
         )}
 
+        {/* Monthly estimate */}
+        {monthly > 0 && (
+          <div className="bg-surface-2 border border-accent/20 rounded-xl px-4 py-3 mb-5 flex justify-between items-center">
+            <p className="text-muted text-sm">Estimation mensuelle</p>
+            <p className="text-accent font-bold text-lg">{Math.round(monthly)} €/mois</p>
+          </div>
+        )}
+
         {/* Add new bottle */}
-        <div className="bg-surface rounded-2xl p-4 space-y-3 mb-5">
+        <div className="bg-surface rounded-2xl p-4 space-y-3">
           <p className="text-sm text-muted font-medium">Ajouter une boisson</p>
           <input
             type="text"
@@ -102,26 +115,11 @@ export default function EditBudget() {
           <button
             onClick={addBottle}
             disabled={!newBottle.name || !newBottle.pricePerUnit}
-            className="w-full border border-accent text-accent py-3 rounded-xl text-sm font-medium disabled:opacity-40"
+            className="w-full bg-accent text-gray-900 font-semibold py-3 rounded-xl text-sm disabled:opacity-40"
           >
             + Ajouter
           </button>
         </div>
-
-        {/* Monthly estimate */}
-        {monthly > 0 && (
-          <div className="bg-surface-2 border border-accent/20 rounded-xl px-4 py-3 mb-6 flex justify-between items-center">
-            <p className="text-muted text-sm">Estimation mensuelle</p>
-            <p className="text-accent font-bold text-lg">{Math.round(monthly)} €/mois</p>
-          </div>
-        )}
-
-        <button
-          onClick={save}
-          className="w-full bg-accent text-gray-900 font-semibold py-4 rounded-2xl text-base"
-        >
-          Enregistrer
-        </button>
       </div>
     </div>
   )
