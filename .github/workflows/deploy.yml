@@ -2,8 +2,8 @@ name: Deploy Libre to GitHub Pages
 
 on:
   push:
-    branches: [main]
-    paths: ['sobriety-app/**']
+    branches: [main, 'claude/*']
+    paths: ['sobriety-app/**', '.github/workflows/deploy.yml']
   workflow_dispatch:
 
 permissions:
