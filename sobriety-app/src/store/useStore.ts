@@ -15,6 +15,7 @@ export interface SOSEvent {
   date: string
   resisted: boolean
   drinkCount?: number
+  trigger?: string
 }
 
 export interface Profile {
@@ -32,20 +33,35 @@ export interface Reminder {
   lastFiredAt: string | null
 }
 
+export interface HealthLog {
+  id: string
+  date: string   // YYYY-MM-DD
+  time: string   // HH:MM
+  systolic?: number
+  diastolic?: number
+  waterGlasses: number
+}
+
 interface AppState {
   profile: Profile | null
   events: SOSEvent[]
   celebratedMilestones: string[]
   reminders: Reminder[]
+  healthLogs: HealthLog[]
+  motivations: string[]
 
   // Actions
   setProfile: (p: Profile) => void
-  recordSOS: (resisted: boolean, drinkCount?: number) => void
+  recordSOS: (resisted: boolean, drinkCount?: number, trigger?: string) => void
   celebrateMilestone: (id: string) => void
   addReminder: (r: Omit<Reminder, 'id' | 'lastFiredAt'>) => void
   updateReminder: (id: string, updates: Partial<Reminder>) => void
   removeReminder: (id: string) => void
   fireReminder: (id: string) => void
+  addHealthLog: (log: HealthLog) => void
+  removeHealthLog: (id: string) => void
+  addMotivation: (text: string) => void
+  removeMotivation: (index: number) => void
   reset: () => void
 
   // Derived getters
@@ -70,6 +86,8 @@ export const useStore = create<AppState>()(
       events: [],
       celebratedMilestones: [],
       reminders: [],
+      healthLogs: [],
+      motivations: [],
 
       setProfile: (p) => set({ profile: p }),
 
@@ -96,18 +114,38 @@ export const useStore = create<AppState>()(
           ),
         })),
 
-      recordSOS: (resisted, drinkCount) => {
+      recordSOS: (resisted, drinkCount, trigger) => {
         const event: SOSEvent = {
           id: generateId(),
           timestamp: new Date().toISOString(),
           date: toDateKey(today()),
           resisted,
           drinkCount: resisted ? undefined : drinkCount,
+          trigger,
         }
         set((s) => ({ events: [...s.events, event] }))
       },
 
-      reset: () => set({ profile: null, events: [], celebratedMilestones: [], reminders: [] }),
+      addHealthLog: (log) =>
+        set((s) => ({ healthLogs: [...s.healthLogs, log] })),
+
+      removeHealthLog: (id) =>
+        set((s) => ({ healthLogs: s.healthLogs.filter((l) => l.id !== id) })),
+
+      addMotivation: (text) =>
+        set((s) => ({ motivations: [...s.motivations, text] })),
+
+      removeMotivation: (index) =>
+        set((s) => ({ motivations: s.motivations.filter((_, i) => i !== index) })),
+
+      reset: () => set({
+        profile: null,
+        events: [],
+        celebratedMilestones: [],
+        reminders: [],
+        healthLogs: [],
+        motivations: [],
+      }),
 
       getDaysSinceStart: () => {
         const { profile } = get()
