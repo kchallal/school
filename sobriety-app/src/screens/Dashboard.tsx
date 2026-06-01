@@ -178,6 +178,12 @@ export default function Dashboard() {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
               )}
             </button>
+            <button
+              onClick={() => navigate('/settings')}
+              className="bg-surface rounded-xl p-2.5"
+            >
+              <span className="text-xl">⚙️</span>
+            </button>
           </div>
         </div>
 

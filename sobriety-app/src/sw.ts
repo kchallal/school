@@ -1,10 +1,12 @@
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+import { clientsClaim } from 'workbox-core'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sw = self as any
 
 cleanupOutdatedCaches()
 precacheAndRoute((self as unknown as { __WB_MANIFEST: [] }).__WB_MANIFEST)
+clientsClaim()
 
 // ─── Reminder scheduling ─────────────────────────────────────────────────────
 
@@ -45,6 +47,11 @@ function scheduleOne(r: ReminderPayload, delayMs: number) {
 }
 
 sw.addEventListener('message', (event: { data: { type: string; reminders?: ReminderPayload[]; id?: string } }) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    sw.skipWaiting()
+    return
+  }
+
   const { type } = event.data
 
   if (type === 'SYNC_REMINDERS') {

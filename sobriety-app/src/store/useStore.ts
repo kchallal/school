@@ -62,6 +62,7 @@ interface AppState {
   removeHealthLog: (id: string) => void
   addMotivation: (text: string) => void
   removeMotivation: (index: number) => void
+  restoreFromBackup: (data: Partial<Pick<AppState, 'profile' | 'events' | 'celebratedMilestones' | 'reminders' | 'healthLogs' | 'motivations'>>) => void
   reset: () => void
 
   // Derived getters
@@ -137,6 +138,16 @@ export const useStore = create<AppState>()(
 
       removeMotivation: (index) =>
         set((s) => ({ motivations: s.motivations.filter((_, i) => i !== index) })),
+
+      restoreFromBackup: (data) =>
+        set({
+          profile: data.profile ?? null,
+          events: data.events ?? [],
+          celebratedMilestones: data.celebratedMilestones ?? [],
+          reminders: data.reminders ?? [],
+          healthLogs: data.healthLogs ?? [],
+          motivations: data.motivations ?? [],
+        }),
 
       reset: () => set({
         profile: null,
