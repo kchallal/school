@@ -4,8 +4,20 @@ import { useStore } from '../store/useStore'
 import { SOS_MESSAGES, getRandomAlternatives } from '../data/sosMessages'
 import { fireResistConfetti } from '../utils/confetti'
 import FloatingEmojis from '../components/FloatingEmojis'
+import BoxBreathing from '../components/BoxBreathing'
 
 const TIMER_SECONDS = 15 * 60
+
+const TRIGGER_TAGS = [
+  'Stress',
+  'Ennui',
+  'Fatigue',
+  'Social',
+  'Habitude',
+  'Tristesse',
+  'Envie soudaine',
+  'Autre',
+]
 
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
@@ -17,6 +29,7 @@ export default function SOS() {
   const getSoberDays = useStore((s) => s.getSoberDays)
   const getCurrentStreak = useStore((s) => s.getCurrentStreak)
   const getTotalSavings = useStore((s) => s.getTotalSavings)
+  const motivations = useStore((s) => s.motivations)
 
   const soberDays = getSoberDays()
   const streak = getCurrentStreak()
@@ -31,6 +44,14 @@ export default function SOS() {
   const [outcome, setOutcome] = useState<'resisted' | 'drank' | null>(null)
   const [alternatives] = useState(() => getRandomAlternatives(4))
   const [messages] = useState(() => shuffle(SOS_MESSAGES))
+  const [showBreathing, setShowBreathing] = useState(false)
+
+  // Trigger journal state
+  const [showTrigger, setShowTrigger] = useState(false)
+  const [pendingResisted, setPendingResisted] = useState<boolean>(false)
+  const [pendingDrankCount, setPendingDrankCount] = useState<number | undefined>(undefined)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [triggerNote, setTriggerNote] = useState('')
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -66,10 +87,17 @@ export default function SOS() {
     setMessageIndex((i) => (i + 1) % messages.length)
   }
 
+  function openTriggerStep(resisted: boolean, drankCnt?: number) {
+    setPendingResisted(resisted)
+    setPendingDrankCount(drankCnt)
+    setSelectedTag(null)
+    setTriggerNote('')
+    setShowTrigger(true)
+  }
+
   function handleResisted() {
-    recordSOS(true)
     fireResistConfetti()
-    setOutcome('resisted')
+    openTriggerStep(true)
   }
 
   function handleDrank() {
@@ -77,9 +105,20 @@ export default function SOS() {
   }
 
   function confirmDrank() {
-    recordSOS(false, drankCount)
     setShowDrankModal(false)
-    setOutcome('drank')
+    openTriggerStep(false, drankCount)
+  }
+
+  function finalizeTrigger(skip: boolean) {
+    const trigger = skip
+      ? undefined
+      : selectedTag
+        ? (triggerNote.trim() ? `${selectedTag} — ${triggerNote.trim()}` : selectedTag)
+        : (triggerNote.trim() || undefined)
+
+    recordSOS(pendingResisted, pendingDrankCount, trigger)
+    setShowTrigger(false)
+    setOutcome(pendingResisted ? 'resisted' : 'drank')
   }
 
   function formatTime(s: number) {
@@ -131,9 +170,82 @@ export default function SOS() {
     )
   }
 
+  // Trigger journal step
+  if (showTrigger) {
+    return (
+      <div className="min-h-screen bg-base text-white pb-24">
+        <div className="max-w-md mx-auto px-5 py-8">
+          <h2 className="text-xl font-bold mb-2">Qu'est-ce qui a déclenché cette envie ?</h2>
+          <p className="text-muted text-sm mb-6">Facultatif — aide à mieux te comprendre.</p>
+
+          {/* Tag buttons */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            {TRIGGER_TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  selectedTag === tag
+                    ? 'bg-accent text-gray-900'
+                    : 'bg-surface-2 border border-gray-700 text-gray-300 hover:border-accent/50'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          {/* Text input */}
+          <textarea
+            value={triggerNote}
+            onChange={(e) => setTriggerNote(e.target.value)}
+            placeholder="Précise si tu veux..."
+            rows={3}
+            className="w-full bg-surface border border-gray-700 rounded-xl px-4 py-3 text-white text-sm mb-6 focus:border-accent focus:outline-none resize-none"
+          />
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => finalizeTrigger(true)}
+              className="flex-1 border border-gray-600 text-muted font-semibold py-4 rounded-2xl"
+            >
+              Passer
+            </button>
+            <button
+              onClick={() => finalizeTrigger(false)}
+              className="flex-1 bg-accent text-gray-900 font-semibold py-4 rounded-2xl"
+            >
+              Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-base text-white pb-24 overflow-y-auto">
       <div className="max-w-md mx-auto px-5 py-8">
+
+        {/* Motivations section — shown first if available */}
+        {motivations.length > 0 && (
+          <div className="bg-surface-2 border border-accent/10 rounded-2xl p-4 mb-5">
+            <p className="text-muted text-xs uppercase tracking-wide mb-2">Tes raisons</p>
+            <ul className="space-y-1">
+              {motivations.slice(0, 3).map((m, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-accent text-sm mt-0.5">•</span>
+                  <span className="text-gray-200 text-sm">{m}</span>
+                </li>
+              ))}
+              {motivations.length > 3 && (
+                <li className="text-muted text-xs mt-1 ml-4">
+                  et {motivations.length - 3} autre{motivations.length - 3 > 1 ? 's' : ''}...
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center mb-8">
@@ -183,6 +295,14 @@ export default function SOS() {
             Argument suivant →
           </button>
         </div>
+
+        {/* Guided breathing button */}
+        <button
+          onClick={() => setShowBreathing(true)}
+          className="w-full border border-gray-700 text-gray-300 font-medium py-3 rounded-xl mb-4 text-sm flex items-center justify-center gap-2 hover:border-accent/50 hover:text-white transition-colors"
+        >
+          🌬️ Respiration guidée
+        </button>
 
         {/* Timer */}
         <div className="bg-surface rounded-2xl p-5 mb-4">
@@ -274,6 +394,28 @@ export default function SOS() {
           </div>
         </div>
       )}
+
+      {/* BoxBreathing bottom-sheet */}
+      {showBreathing && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-end justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowBreathing(false) }}
+        >
+          <div
+            className="bg-surface-2 rounded-t-3xl w-full max-w-md"
+            style={{ animation: 'slideUp 0.25s ease-out' }}
+          >
+            <BoxBreathing onClose={() => setShowBreathing(false)} />
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   )
 }

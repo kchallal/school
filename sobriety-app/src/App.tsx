@@ -10,6 +10,8 @@ import Knowledge from './screens/Knowledge'
 import History from './screens/History'
 import EditBudget from './screens/EditBudget'
 import Reminders from './screens/Reminders'
+import Health from './screens/Health'
+import Motivations from './screens/Motivations'
 
 function AppShell() {
   const profile = useStore((s) => s.profile)
@@ -33,6 +35,8 @@ function AppShell() {
         <Route path="/history" element={<History />} />
         <Route path="/edit-budget" element={<EditBudget />} />
         <Route path="/reminders" element={<Reminders />} />
+        <Route path="/health" element={<Health />} />
+        <Route path="/motivations" element={<Motivations />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />

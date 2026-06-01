@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { MILESTONES, Milestone } from '../data/milestones'
-import { formatDate, fromDateKey, addDays } from '../utils/dateUtils'
+import { formatDate, fromDateKey, addDays, toDateKey } from '../utils/dateUtils'
 import MilestoneCelebration from '../components/MilestoneCelebration'
 import { ORGAN_ACTIVITIES, getTimeSlot, getTimeLabel } from '../data/organRealtime'
+import TrendChart from '../components/TrendChart'
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -113,6 +114,8 @@ export default function Dashboard() {
   const celebrateMilestone = useStore((s) => s.celebrateMilestone)
 
   const [pendingCelebration, setPendingCelebration] = useState<Milestone | null>(null)
+  const [trendDays, setTrendDays] = useState(30)
+  const getDrinkDays = useStore((s) => s.getDrinkDays)
 
   if (!profile) return null
 
@@ -126,6 +129,7 @@ export default function Dashboard() {
   const organs = getOrganRecovery(soberDays)
   const nextMilestone = getNextMilestone(soberDays)
   const currentMilestone = getCurrentMilestone(soberDays)
+  const drinkDays = getDrinkDays()
   const startDate = addDays(fromDateKey(profile.lastDrinkDate), 1)
   const daysUntilNext = nextMilestone ? Math.ceil(nextMilestone.days - soberDays) : null
 
@@ -158,15 +162,23 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
             <p className="text-muted text-sm mt-1">Depuis le {formatDate(startDate)}</p>
           </div>
-          <button
-            onClick={() => navigate('/reminders')}
-            className="relative bg-surface rounded-xl p-2.5"
-          >
-            <span className="text-xl">⏰</span>
-            {useStore.getState().reminders.some((r) => r.active) && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/motivations')}
+              className="bg-surface rounded-xl p-2.5"
+            >
+              <span className="text-xl">✍️</span>
+            </button>
+            <button
+              onClick={() => navigate('/reminders')}
+              className="relative bg-surface rounded-xl p-2.5"
+            >
+              <span className="text-xl">⏰</span>
+              {useStore.getState().reminders.some((r) => r.active) && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Main stat */}
@@ -197,6 +209,33 @@ export default function Dashboard() {
             label="Étape actuelle"
             value={currentMilestone?.label ?? '–'}
             sub={currentMilestone ? '✓ atteinte' : 'En cours'}
+          />
+        </div>
+
+        {/* Trend chart */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-white font-semibold">Tendance</p>
+            <div className="flex gap-1">
+              {[30, 60, 90].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setTrendDays(d)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    trendDays === d
+                      ? 'bg-accent text-gray-900'
+                      : 'bg-surface text-muted hover:text-white'
+                  }`}
+                >
+                  {d}j
+                </button>
+              ))}
+            </div>
+          </div>
+          <TrendChart
+            drinkDays={drinkDays}
+            startDate={toDateKey(startDate)}
+            days={trendDays}
           />
         </div>
 

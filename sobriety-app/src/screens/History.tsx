@@ -86,6 +86,33 @@ export default function History() {
           </div>
         </div>
 
+        {/* Trigger stats */}
+        {events.some((e) => e.trigger) && (() => {
+          const triggerCounts: Record<string, number> = {}
+          events.forEach((e) => {
+            if (!e.trigger) return
+            // Extract the main tag (before " — " if present)
+            const tag = e.trigger.includes(' — ') ? e.trigger.split(' — ')[0] : e.trigger
+            triggerCounts[tag] = (triggerCounts[tag] ?? 0) + 1
+          })
+          const sorted = Object.entries(triggerCounts).sort((a, b) => b[1] - a[1])
+          return (
+            <div className="bg-surface rounded-2xl p-4 mb-6">
+              <p className="text-muted text-xs uppercase tracking-wide mb-3">Déclencheurs fréquents</p>
+              <div className="flex flex-wrap gap-2">
+                {sorted.map(([tag, count]) => (
+                  <span
+                    key={tag}
+                    className="bg-surface-2 border border-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-full"
+                  >
+                    {tag} × {count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Event list */}
         <h2 className="text-white font-semibold mb-4">Événements enregistrés</h2>
         {events.length === 0 ? (
@@ -93,20 +120,25 @@ export default function History() {
         ) : (
           <div className="space-y-2">
             {[...events].reverse().map((e) => (
-              <div key={e.id} className="bg-surface rounded-xl px-4 py-3 flex justify-between items-center">
-                <div>
+              <div key={e.id} className="bg-surface rounded-xl px-4 py-3">
+                <div className="flex justify-between items-center mb-1">
                   <p className="text-white text-sm font-medium">
                     {e.resisted ? '⚡ SOS résisté' : `🍺 ${e.drinkCount ?? 1} verre${(e.drinkCount ?? 1) > 1 ? 's' : ''} bu${(e.drinkCount ?? 1) > 1 ? 's' : ''}`}
                   </p>
-                  <p className="text-muted text-xs">{e.date}</p>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      e.resisted ? 'bg-accent/20 text-accent' : 'bg-danger/20 text-danger'
+                    }`}
+                  >
+                    {e.resisted ? 'Résisté' : 'Bu'}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    e.resisted ? 'bg-accent/20 text-accent' : 'bg-danger/20 text-danger'
-                  }`}
-                >
-                  {e.resisted ? 'Résisté' : 'Bu'}
-                </span>
+                <p className="text-muted text-xs">{e.date}</p>
+                {e.trigger && (
+                  <p className="text-muted text-xs mt-1">
+                    <span className="text-gray-500">Déclencheur ·</span> {e.trigger}
+                  </p>
+                )}
               </div>
             ))}
           </div>
