@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useStore } from './store/useStore'
 import BottomNav from './components/BottomNav'
+import ReminderEngine from './components/ReminderEngine'
 import Onboarding from './screens/Onboarding'
 import Dashboard from './screens/Dashboard'
 import SOS from './screens/SOS'
@@ -8,6 +9,7 @@ import Milestones from './screens/Milestones'
 import Knowledge from './screens/Knowledge'
 import History from './screens/History'
 import EditBudget from './screens/EditBudget'
+import Reminders from './screens/Reminders'
 
 function AppShell() {
   const profile = useStore((s) => s.profile)
@@ -22,6 +24,7 @@ function AppShell() {
 
   return (
     <>
+      <ReminderEngine />
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/sos" element={<SOS />} />
@@ -29,6 +32,7 @@ function AppShell() {
         <Route path="/knowledge" element={<Knowledge />} />
         <Route path="/history" element={<History />} />
         <Route path="/edit-budget" element={<EditBudget />} />
+        <Route path="/reminders" element={<Reminders />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />

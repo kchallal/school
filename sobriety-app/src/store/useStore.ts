@@ -23,15 +23,29 @@ export interface Profile {
   bottles: Bottle[]
 }
 
+export interface Reminder {
+  id: string
+  label: string
+  emoji: string
+  intervalMinutes: number
+  active: boolean
+  lastFiredAt: string | null
+}
+
 interface AppState {
   profile: Profile | null
   events: SOSEvent[]
   celebratedMilestones: string[]
+  reminders: Reminder[]
 
   // Actions
   setProfile: (p: Profile) => void
   recordSOS: (resisted: boolean, drinkCount?: number) => void
   celebrateMilestone: (id: string) => void
+  addReminder: (r: Omit<Reminder, 'id' | 'lastFiredAt'>) => void
+  updateReminder: (id: string, updates: Partial<Reminder>) => void
+  removeReminder: (id: string) => void
+  fireReminder: (id: string) => void
   reset: () => void
 
   // Derived getters
@@ -55,11 +69,32 @@ export const useStore = create<AppState>()(
       profile: null,
       events: [],
       celebratedMilestones: [],
+      reminders: [],
 
       setProfile: (p) => set({ profile: p }),
 
       celebrateMilestone: (id) =>
         set((s) => ({ celebratedMilestones: [...s.celebratedMilestones, id] })),
+
+      addReminder: (r) =>
+        set((s) => ({
+          reminders: [...s.reminders, { ...r, id: generateId(), lastFiredAt: null }],
+        })),
+
+      updateReminder: (id, updates) =>
+        set((s) => ({
+          reminders: s.reminders.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+        })),
+
+      removeReminder: (id) =>
+        set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) })),
+
+      fireReminder: (id) =>
+        set((s) => ({
+          reminders: s.reminders.map((r) =>
+            r.id === id ? { ...r, lastFiredAt: new Date().toISOString() } : r
+          ),
+        })),
 
       recordSOS: (resisted, drinkCount) => {
         const event: SOSEvent = {
@@ -72,7 +107,7 @@ export const useStore = create<AppState>()(
         set((s) => ({ events: [...s.events, event] }))
       },
 
-      reset: () => set({ profile: null, events: [], celebratedMilestones: [] }),
+      reset: () => set({ profile: null, events: [], celebratedMilestones: [], reminders: [] }),
 
       getDaysSinceStart: () => {
         const { profile } = get()

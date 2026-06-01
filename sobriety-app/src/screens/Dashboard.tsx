@@ -153,9 +153,20 @@ export default function Dashboard() {
       <div className="max-w-md mx-auto px-5 py-8">
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
-          <p className="text-muted text-sm mt-1">Depuis le {formatDate(startDate)}</p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
+            <p className="text-muted text-sm mt-1">Depuis le {formatDate(startDate)}</p>
+          </div>
+          <button
+            onClick={() => navigate('/reminders')}
+            className="relative bg-surface rounded-xl p-2.5"
+          >
+            <span className="text-xl">⏰</span>
+            {useStore.getState().reminders.some((r) => r.active) && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
+            )}
+          </button>
         </div>
 
         {/* Main stat */}
