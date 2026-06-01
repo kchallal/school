@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { MILESTONES, Milestone } from '../data/milestones'
@@ -103,6 +103,7 @@ function getCurrentMilestone(daysSober: number) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const profile = useStore((s) => s.profile)
+  const events = useStore((s) => s.events)
   const getDaysSinceStart = useStore((s) => s.getDaysSinceStart)
   const getSoberDays = useStore((s) => s.getSoberDays)
   const getCurrentStreak = useStore((s) => s.getCurrentStreak)
@@ -115,7 +116,12 @@ export default function Dashboard() {
 
   const [pendingCelebration, setPendingCelebration] = useState<Milestone | null>(null)
   const [trendDays, setTrendDays] = useState(30)
-  const getDrinkDays = useStore((s) => s.getDrinkDays)
+
+  const drinkDays = useMemo(() => {
+    const days = new Set<string>()
+    events.filter((e) => !e.resisted).forEach((e) => days.add(e.date))
+    return Array.from(days)
+  }, [events])
 
   if (!profile) return null
 
@@ -129,7 +135,6 @@ export default function Dashboard() {
   const organs = getOrganRecovery(soberDays)
   const nextMilestone = getNextMilestone(soberDays)
   const currentMilestone = getCurrentMilestone(soberDays)
-  const drinkDays = getDrinkDays()
   const startDate = addDays(fromDateKey(profile.lastDrinkDate), 1)
   const daysUntilNext = nextMilestone ? Math.ceil(nextMilestone.days - soberDays) : null
 
