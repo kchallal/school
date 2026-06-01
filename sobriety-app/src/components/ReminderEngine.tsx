@@ -11,55 +11,77 @@ async function requestNotifPermission(): Promise<boolean> {
   if (!('Notification' in window)) return false
   if (Notification.permission === 'granted') return true
   if (Notification.permission === 'denied') return false
-  const result = await Notification.requestPermission()
-  return result === 'granted'
+  return (await Notification.requestPermission()) === 'granted'
 }
 
-function sendNotification(emoji: string, label: string) {
-  if (Notification.permission === 'granted') {
-    new Notification(`${emoji} ${label}`, {
-      body: 'Rappel Libre',
-      icon: '/favicon.svg',
-      silent: false,
-    })
-  }
+function syncToServiceWorker(reminders: ReturnType<typeof useStore.getState>['reminders']) {
+  if (!navigator.serviceWorker?.controller) return
+  navigator.serviceWorker.controller.postMessage({
+    type: 'SYNC_REMINDERS',
+    reminders,
+  })
 }
 
 export default function ReminderEngine() {
   const reminders = useStore((s) => s.reminders)
   const fireReminder = useStore((s) => s.fireReminder)
   const [toasts, setToasts] = useState<Toast[]>([])
-  const toastsRef = useRef(toasts)
-  toastsRef.current = toasts
 
-  // Ask notification permission when any reminder becomes active
+  const activeCount = reminders.filter((r) => r.active).length
+
+  // Ask permission and sync to SW whenever reminders change
   useEffect(() => {
-    if (reminders.some((r) => r.active)) {
-      requestNotifPermission()
+    if (activeCount > 0) {
+      requestNotifPermission().then(() => syncToServiceWorker(reminders))
+    } else {
+      syncToServiceWorker(reminders)
     }
-  }, [reminders.some((r) => r.active)])
+  }, [JSON.stringify(reminders)])
 
-  // Check reminders every 30 seconds
+  // Also sync once SW is ready (first load)
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (!('serviceWorker' in navigator)) return
+    navigator.serviceWorker.ready.then(() => {
+      if (reminders.some((r) => r.active)) syncToServiceWorker(reminders)
+    })
+  }, [])
+
+  // Listen for REMINDER_FIRED from SW → update store + show in-app toast
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== 'REMINDER_FIRED') return
+      const { id } = event.data as { id: string }
+      fireReminder(id)
+      const r = useStore.getState().reminders.find((r) => r.id === id)
+      if (!r) return
+      const toast: Toast = { id: id + Date.now(), emoji: r.emoji, label: r.label }
+      setToasts((prev) => [...prev, toast])
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== toast.id)), 6000)
+    }
+    navigator.serviceWorker.addEventListener('message', handler)
+    return () => navigator.serviceWorker.removeEventListener('message', handler)
+  }, [reminders])
+
+  // Fallback in-app interval (when SW not available, e.g. dev mode)
+  const fallbackRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    if ('serviceWorker' in navigator) return
+    fallbackRef.current = setInterval(() => {
       const now = Date.now()
-      reminders.forEach((r) => {
+      useStore.getState().reminders.forEach((r) => {
         if (!r.active) return
         const lastMs = r.lastFiredAt ? new Date(r.lastFiredAt).getTime() : 0
-        const dueMs = lastMs + r.intervalMinutes * 60 * 1000
-        if (now >= dueMs) {
+        if (now >= lastMs + r.intervalMinutes * 60 * 1000) {
           fireReminder(r.id)
-          sendNotification(r.emoji, r.label)
           const toast: Toast = { id: r.id + now, emoji: r.emoji, label: r.label }
           setToasts((prev) => [...prev, toast])
-          setTimeout(() => {
-            setToasts((prev) => prev.filter((t) => t.id !== toast.id))
-          }, 6000)
+          setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== toast.id)), 6000)
         }
       })
     }, 30_000)
-    return () => clearInterval(interval)
-  }, [reminders])
+    return () => { if (fallbackRef.current) clearInterval(fallbackRef.current) }
+  }, [])
 
   if (toasts.length === 0) return null
 
@@ -73,7 +95,7 @@ export default function ReminderEngine() {
           <span className="text-2xl">{t.emoji}</span>
           <div>
             <p className="text-white font-semibold text-sm">{t.label}</p>
-            <p className="text-muted text-xs">Rappel Libre</p>
+            <p className="text-muted text-xs">Rappel · Libre</p>
           </div>
         </div>
       ))}
