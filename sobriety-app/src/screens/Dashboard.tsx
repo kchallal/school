@@ -192,6 +192,19 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Anti-stress shortcut */}
+        <button
+          onClick={() => navigate('/stress')}
+          className="w-full bg-surface border border-gray-700 hover:border-accent/40 rounded-2xl p-4 mb-5 flex items-center gap-4 text-left transition-colors"
+        >
+          <span className="text-3xl">🧘</span>
+          <div className="flex-1">
+            <p className="text-white font-semibold text-sm">Boîte à outils anti-stress</p>
+            <p className="text-muted text-xs mt-0.5">9 techniques · Respiration, ancrage, mouvement…</p>
+          </div>
+          <span className="text-muted text-sm">→</span>
+        </button>
+
         {/* Main stat */}
         <div className="bg-surface-2 border border-accent/20 rounded-3xl p-6 mb-5 text-center">
           <p className="text-muted text-sm uppercase tracking-widest mb-2">Jours sobres</p>

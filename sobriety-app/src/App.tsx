@@ -14,6 +14,7 @@ import Reminders from './screens/Reminders'
 import Health from './screens/Health'
 import Motivations from './screens/Motivations'
 import Settings from './screens/Settings'
+import Stress from './screens/Stress'
 
 function AppShell() {
   const profile = useStore((s) => s.profile)
@@ -41,6 +42,7 @@ function AppShell() {
         <Route path="/health" element={<Health />} />
         <Route path="/motivations" element={<Motivations />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/stress" element={<Stress />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />
