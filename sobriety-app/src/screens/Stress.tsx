@@ -448,45 +448,59 @@ function BubbleTechnique({ onClose }: { onClose: () => void }) {
 
   if (!started) {
     return (
-      <div className="p-6 text-center">
-        <div className="text-5xl mb-4">🫧</div>
-        <h3 className="text-white font-semibold text-lg mb-4">Bulles de pensées</h3>
-        <div className="bg-surface rounded-2xl p-5 mb-6 text-left space-y-3">
+      <div className="fixed inset-0 bg-base z-50 flex flex-col items-center justify-center px-8 text-center">
+        <div className="text-6xl mb-5">🫧</div>
+        <h3 className="text-white font-semibold text-xl mb-5">Bulles de pensées</h3>
+        <div className="bg-surface rounded-2xl p-5 mb-8 text-left space-y-3 w-full max-w-sm">
           <p className="text-white text-sm font-medium">Comment ça marche</p>
           <p className="text-muted text-sm leading-relaxed">Installe-toi confortablement. Ferme les yeux ou fixe un point devant toi.</p>
-          <p className="text-muted text-sm leading-relaxed">Chaque fois qu'une pensée surgit, appuie sur le bouton. Une bulle apparaît en bas — prends le temps de lui confier ta pensée. Elle s'élèvera d'elle-même.</p>
+          <p className="text-muted text-sm leading-relaxed">Chaque fois qu'une pensée surgit, appuie sur le bouton. Une bulle apparaît — prends le temps de lui confier la pensée. Elle s'élèvera d'elle-même.</p>
           <p className="text-muted text-sm leading-relaxed">Tu ne combats pas la pensée. Tu l'observes juste partir.</p>
         </div>
         <button
           onClick={() => { setStarted(true); releaseBubble() }}
-          className="w-full bg-accent text-gray-900 font-semibold py-4 rounded-2xl"
+          className="w-full max-w-sm bg-accent text-gray-900 font-semibold py-4 rounded-2xl"
         >
           Commencer (5 min)
         </button>
+        <button onClick={onClose} className="text-muted text-sm mt-4 underline">Annuler</button>
+      </div>
+    )
+  }
+
+  if (done) {
+    return (
+      <div className="fixed inset-0 bg-base z-50 flex flex-col items-center justify-center px-8 text-center">
+        <div className="text-5xl mb-4">✅</div>
+        <p className="text-white font-semibold text-lg mb-2">C'est fait.</p>
+        <p className="text-muted text-sm leading-relaxed mb-8 max-w-xs">Les pensées sont passées. Tu es resté l'observateur.</p>
+        <button onClick={onClose} className="bg-accent text-gray-900 font-semibold py-3 px-10 rounded-2xl">Fermer</button>
       </div>
     )
   }
 
   return (
-    <div className="pb-6 text-center">
-      {/* Bubble theater — large */}
-      <div className="relative bg-surface overflow-hidden" style={{ height: 320 }}>
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-8xl opacity-8">🌿</span>
+    <div className="fixed inset-0 bg-base z-50 overflow-hidden">
+      {/* Full-screen theater */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span style={{ fontSize: 160, opacity: 0.04 }}>🌿</span>
         </div>
-        <div className="absolute top-3 right-4 text-muted font-mono text-xs">{mins}:{String(secs).padStart(2, '0')}</div>
+        <div className="absolute top-safe top-5 right-5 text-muted font-mono text-sm">
+          {mins}:{String(secs).padStart(2, '0')}
+        </div>
         {bubbles.map(b => (
           <div
             key={b.id}
             className="absolute"
             style={{
-              left: `calc(${b.x}% - 40px)`,
-              bottom: '8%',
-              width: 80,
-              height: 80,
+              left: `calc(${b.x}% - 45px)`,
+              bottom: 160,
+              width: 90,
+              height: 90,
               borderRadius: '50%',
               border: '2px solid rgba(78,204,163,0.55)',
-              background: 'rgba(78,204,163,0.06)',
+              background: 'rgba(78,204,163,0.05)',
               animation: b.phase === 'filling'
                 ? 'pulseFill 2s ease-in-out infinite'
                 : 'floatUp 5.5s ease-out forwards',
@@ -495,12 +509,15 @@ function BubbleTechnique({ onClose }: { onClose: () => void }) {
         ))}
       </div>
 
-      <p className="text-gray-300 text-sm leading-relaxed mt-5 mb-5 min-h-[40px] px-6">{hint}</p>
-
-      <div className="px-6">
+      {/* Bottom overlay */}
+      <div
+        className="absolute bottom-0 left-0 right-0 px-6 pb-10 pt-20 text-center"
+        style={{ background: 'linear-gradient(to top, rgba(15,17,23,0.98) 60%, transparent)' }}
+      >
+        <p className="text-gray-300 text-sm leading-relaxed mb-6 min-h-[40px]">{hint}</p>
         <button
           onClick={releaseBubble}
-          className="w-full border border-accent/40 text-accent font-medium py-4 rounded-2xl mb-3 active:scale-95 transition-transform text-base"
+          className="w-full max-w-sm border border-accent/40 text-accent font-medium py-4 rounded-2xl mb-3 active:scale-95 transition-transform text-base"
         >
           🫧 Nouvelle bulle
         </button>
@@ -559,7 +576,7 @@ export default function Stress() {
         </div>
       </div>
 
-      {active && (
+      {active && active !== 'bubbles' && (
         <div
           className="fixed inset-0 bg-black/70 flex items-end justify-center z-50"
           onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
@@ -574,6 +591,10 @@ export default function Stress() {
         </div>
       )}
 
+      {active === 'bubbles' && (
+        <BubbleTechnique onClose={() => setActive(null)} />
+      )}
+
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(100%); opacity: 0; }
@@ -584,9 +605,9 @@ export default function Stress() {
           50%       { transform: scale(1.09); opacity: 0.8;  box-shadow: 0 0 28px rgba(78,204,163,0.3);  }
         }
         @keyframes floatUp {
-          0%   { transform: translateY(0)     scale(1);    opacity: 0.75; }
-          65%  { transform: translateY(-220px) scale(1.05); opacity: 0.45; }
-          100% { transform: translateY(-340px) scale(0.65); opacity: 0;    }
+          0%   { transform: translateY(0)      scale(1);    opacity: 0.75; }
+          60%  { transform: translateY(-50vh)  scale(1.08); opacity: 0.45; }
+          100% { transform: translateY(-100vh) scale(0.6);  opacity: 0;    }
         }
       `}</style>
     </div>
