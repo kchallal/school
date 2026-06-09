@@ -480,7 +480,7 @@ function BubbleTechnique({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-base z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-base z-50">
       {/* Full-screen theater */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
@@ -606,8 +606,8 @@ export default function Stress() {
         }
         @keyframes floatUp {
           0%   { transform: translateY(0)      scale(1);    opacity: 0.75; }
-          60%  { transform: translateY(-50vh)  scale(1.08); opacity: 0.45; }
-          100% { transform: translateY(-100vh) scale(0.6);  opacity: 0;    }
+          60%  { transform: translateY(-560px) scale(1.08); opacity: 0.4;  }
+          100% { transform: translateY(-1100px) scale(0.6); opacity: 0;    }
         }
       `}</style>
     </div>
