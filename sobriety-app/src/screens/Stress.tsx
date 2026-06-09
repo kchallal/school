@@ -12,6 +12,7 @@ const TECHNIQUES = [
   { id: 'walk',      name: 'Marche 5 minutes',         emoji: '🚶', duration: '5 min',  desc: 'Libère les tensions physiques' },
   { id: 'stop',      name: 'Technique STOP',           emoji: '✋', duration: '1 min',  desc: 'Pause de pleine conscience' },
   { id: 'write',     name: 'Écriture de décharge',     emoji: '✍️', duration: '3 min',  desc: 'Vide ton esprit sans filtre' },
+  { id: 'bubbles',   name: 'Bulles de pensées',        emoji: '🫧', duration: '5 min',  desc: 'Observe et laisse partir' },
 ]
 
 const GROUNDING_STEPS = [
@@ -408,6 +409,96 @@ function WriteTechnique({ onClose }: { onClose: () => void }) {
   )
 }
 
+function BubbleTechnique({ onClose }: { onClose: () => void }) {
+  const TOTAL = 5 * 60
+  const [started, setStarted] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const [done, setDone] = useState(false)
+  const [bubbles, setBubbles] = useState<{ id: number; x: number }[]>([])
+
+  useEffect(() => {
+    if (!started || done) return
+    const t = setInterval(() => setElapsed(e => { if (e + 1 >= TOTAL) { setDone(true); return TOTAL } return e + 1 }), 1000)
+    return () => clearInterval(t)
+  }, [started, done])
+
+  function releaseBubble() {
+    const id = Date.now()
+    const x = 10 + Math.random() * 78
+    setBubbles(b => [...b, { id, x }])
+    setTimeout(() => setBubbles(b => b.filter(bub => bub.id !== id)), 5200)
+  }
+
+  if (done) return <DoneCard message="Les pensées sont passées. Tu es resté l'observateur." onClose={onClose} />
+
+  const HINTS = [
+    'Une pensée arrive ? Pose-la dans une bulle.',
+    "Observe-la s'élever. Tu n'as pas besoin de la retenir.",
+    "Tu es l'observateur, pas la pensée.",
+    'Laisse passer. Rien à résoudre maintenant.',
+    'Chaque bulle emporte la pensée avec elle.',
+  ]
+  const timeLeft = TOTAL - elapsed
+  const mins = Math.floor(timeLeft / 60)
+  const secs = timeLeft % 60
+  const hint = HINTS[Math.min(Math.floor(elapsed / (TOTAL / HINTS.length)), HINTS.length - 1)]
+
+  if (!started) {
+    return (
+      <div className="p-6 text-center">
+        <div className="text-5xl mb-4">🫧</div>
+        <h3 className="text-white font-semibold text-lg mb-4">Bulles de pensées</h3>
+        <div className="bg-surface rounded-2xl p-5 mb-6 text-left space-y-3">
+          <p className="text-white text-sm font-medium">Comment ça marche</p>
+          <p className="text-muted text-sm leading-relaxed">Installe-toi confortablement. Ferme les yeux ou fixe un point devant toi.</p>
+          <p className="text-muted text-sm leading-relaxed">Chaque fois qu'une pensée surgit — stress, envie, rumination — appuie sur le bouton pour la placer dans une bulle et regarder partir.</p>
+          <p className="text-muted text-sm leading-relaxed">Tu ne combats pas la pensée. Tu l'observes juste s'éloigner.</p>
+        </div>
+        <button
+          onClick={() => { setStarted(true); releaseBubble() }}
+          className="w-full bg-accent text-gray-900 font-semibold py-4 rounded-2xl"
+        >
+          Commencer (5 min)
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 text-center">
+      <h3 className="text-white font-semibold text-lg mb-4">Bulles de pensées</h3>
+
+      {/* Bubble theater */}
+      <div className="relative rounded-2xl bg-surface overflow-hidden mb-5" style={{ height: 190 }}>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="text-6xl opacity-10">🌿</span>
+        </div>
+        {bubbles.map(b => (
+          <div
+            key={b.id}
+            className="absolute"
+            style={{ left: `${b.x}%`, bottom: '10%', animation: 'floatBubble 5s ease-out forwards' }}
+          >
+            <div className="w-10 h-10 rounded-full border-2 border-accent/50" style={{ background: 'rgba(78,204,163,0.06)' }} />
+          </div>
+        ))}
+      </div>
+
+      <p className="text-gray-300 text-sm leading-relaxed mb-6 min-h-[40px]">{hint}</p>
+
+      <button
+        onClick={releaseBubble}
+        className="w-full border border-accent/40 text-accent font-medium py-4 rounded-2xl mb-4 active:scale-95 transition-transform"
+      >
+        🫧 Nouvelle bulle
+      </button>
+
+      <p className="text-muted font-mono text-sm mb-3">{mins}:{String(secs).padStart(2, '0')} restantes</p>
+      <button onClick={onClose} className="text-muted text-sm underline">Arrêter</button>
+    </div>
+  )
+}
+
 // ── Routing ──────────────────────────────────────────────────────────────────
 
 function TechniqueView({ id, onClose }: { id: string; onClose: () => void }) {
@@ -421,6 +512,7 @@ function TechniqueView({ id, onClose }: { id: string; onClose: () => void }) {
     case 'walk':      return <WalkTechnique onClose={onClose} />
     case 'stop':      return <StopTechnique onClose={onClose} />
     case 'write':     return <WriteTechnique onClose={onClose} />
+    case 'bubbles':   return <BubbleTechnique onClose={onClose} />
     default:          return null
   }
 }
@@ -475,6 +567,11 @@ export default function Stress() {
         @keyframes slideUp {
           from { transform: translateY(100%); opacity: 0; }
           to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes floatBubble {
+          0%   { transform: translateY(0)     scale(1);    opacity: 0.75; }
+          60%  { transform: translateY(-140px) scale(1.1); opacity: 0.4;  }
+          100% { transform: translateY(-220px) scale(0.7); opacity: 0;    }
         }
       `}</style>
     </div>
