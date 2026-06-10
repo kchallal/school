@@ -6,12 +6,14 @@ const TECHNIQUES = [
   { id: 'box',       name: 'Respiration box',         emoji: '⬜', duration: '4 min',  desc: '4 phases de 4 secondes' },
   { id: 'coherence', name: 'Cohérence cardiaque',     emoji: '💚', duration: '5 min',  desc: '5s inspirer · 5s expirer' },
   { id: '478',       name: 'Méthode 4-7-8',           emoji: '🌙', duration: '2 min',  desc: 'Sédatif naturel rapide' },
+  { id: 'sedative',  name: 'Soupir physiologique',    emoji: '😮‍💨', duration: '1.5 min', desc: 'Double sniff · longue expiration' },
   { id: 'grounding', name: '5-4-3-2-1 Ancrage',       emoji: '🌱', duration: '3 min',  desc: 'Reviens dans le présent' },
   { id: 'cold',      name: 'Eau froide',               emoji: '💧', duration: '30 sec', desc: 'Ralentit le rythme cardiaque' },
   { id: 'muscle',    name: 'Relâchement musculaire',  emoji: '💆', duration: '3 min',  desc: 'Contracter puis relâcher' },
   { id: 'walk',      name: 'Marche 5 minutes',         emoji: '🚶', duration: '5 min',  desc: 'Libère les tensions physiques' },
   { id: 'stop',      name: 'Technique STOP',           emoji: '✋', duration: '1 min',  desc: 'Pause de pleine conscience' },
   { id: 'write',     name: 'Écriture de décharge',     emoji: '✍️', duration: '3 min',  desc: 'Vide ton esprit sans filtre' },
+  { id: 'bubbles',   name: 'Bulles de pensées',        emoji: '🫧', duration: '5 min',  desc: 'Observe et laisse partir' },
 ]
 
 const GROUNDING_STEPS = [
@@ -408,6 +410,122 @@ function WriteTechnique({ onClose }: { onClose: () => void }) {
   )
 }
 
+function SedativeTechnique({ onClose }: { onClose: () => void }) {
+  const SNIFF1 = 2, SNIFF2 = 1, EXHALE = 7
+  const CYCLE = 10, TOTAL_CYCLES = 8, TOTAL = 80
+
+  const [elapsed, setElapsed] = useState(0)
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    if (done) return
+    const t = setInterval(() => setElapsed(e => {
+      if (e + 1 >= TOTAL) { setDone(true); return TOTAL }
+      return e + 1
+    }), 1000)
+    return () => clearInterval(t)
+  }, [done])
+
+  if (done) return <DoneCard message="Ton système nerveux s'est calmé. Le nerf vague a fait son travail." onClose={onClose} />
+
+  const ce = elapsed % CYCLE
+  const round = Math.floor(elapsed / CYCLE) + 1
+  const isExhale = ce >= SNIFF1 + SNIFF2
+  const isSniff2 = !isExhale && ce >= SNIFF1
+
+  let label: string, sublabel: string, phaseLeft: number
+  if (ce < SNIFF1) {
+    label = '👃 Premier sniff'
+    sublabel = 'Courte inspiration par le nez'
+    phaseLeft = SNIFF1 - ce
+  } else if (ce < SNIFF1 + SNIFF2) {
+    label = '👃 Deuxième sniff'
+    sublabel = 'Un petit sniff de plus — gonfle les alvéoles'
+    phaseLeft = SNIFF1 + SNIFF2 - ce
+  } else {
+    label = '😮‍💨 Expire'
+    sublabel = 'Long souffle lent par la bouche — aussi long que possible'
+    phaseLeft = CYCLE - ce
+  }
+
+  return (
+    <div className="p-6 text-center">
+      <h3 className="text-white font-semibold text-lg mb-1">Soupir physiologique</h3>
+      <p className="text-muted text-sm mb-4">Cycle {Math.min(round, TOTAL_CYCLES)}/{TOTAL_CYCLES}</p>
+      <BreathCircle growing={!isExhale} phaseDuration={isExhale ? EXHALE : isSniff2 ? SNIFF2 : SNIFF1} />
+      <p className="text-2xl font-bold text-accent mt-2">{label}</p>
+      <p className="text-muted text-xs mt-2 max-w-xs mx-auto leading-relaxed">{sublabel}</p>
+      <p className="text-white font-mono text-sm mt-3">{phaseLeft}s</p>
+      <button onClick={onClose} className="mt-8 text-muted text-sm underline">Arrêter</button>
+    </div>
+  )
+}
+
+const FILL_DUR = 4000
+const FLOAT_DUR = 5500
+
+function BubbleTechnique({ onClose }: { onClose: () => void }) {
+  const [bubbles, setBubbles] = useState<{ id: number; x: number; phase: 'filling' | 'floating' }[]>([])
+  const nextId = useRef(0)
+
+  function addBubble(e: React.MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const id = nextId.current++
+    setBubbles(b => [...b, { id, x: Math.max(8, Math.min(92, x)), phase: 'filling' }])
+    setTimeout(() => {
+      setBubbles(b => b.map(bub => bub.id === id ? { ...bub, phase: 'floating' } : bub))
+      setTimeout(() => setBubbles(b => b.filter(bub => bub.id !== id)), FLOAT_DUR)
+    }, FILL_DUR)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-base z-50 flex flex-col" onClick={addBubble}>
+      <style>{`
+        @keyframes pulseFill {
+          0%, 100% { transform: scale(1);    opacity: 0.55; box-shadow: 0 0 12px rgba(78,204,163,0.15); }
+          50%       { transform: scale(1.09); opacity: 0.8;  box-shadow: 0 0 28px rgba(78,204,163,0.3);  }
+        }
+        @keyframes floatUp {
+          0%   { transform: translateY(0)       scale(1);    opacity: 0.75; }
+          60%  { transform: translateY(-560px)  scale(1.08); opacity: 0.4;  }
+          100% { transform: translateY(-1100px) scale(0.6);  opacity: 0;    }
+        }
+      `}</style>
+      <div className="flex-1 relative select-none">
+        {bubbles.map(b => (
+          <div
+            key={b.id}
+            style={{
+              position: 'absolute',
+              bottom: 160,
+              left: `calc(${b.x}% - 45px)`,
+              width: 90,
+              height: 90,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(78,204,163,0.45) 0%, rgba(78,204,163,0.1) 100%)',
+              border: '1.5px solid rgba(78,204,163,0.4)',
+              animation: b.phase === 'filling'
+                ? `pulseFill ${FILL_DUR / 1000}s ease-in-out infinite`
+                : `floatUp ${FLOAT_DUR / 1000}s ease-out forwards`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="px-6 pb-14 pt-4 text-center pointer-events-none">
+        <p className="text-white/90 font-semibold text-base mb-1">Touche l'écran</p>
+        <p className="text-muted text-sm">Mets une pensée dans chaque bulle. Laisse-la partir.</p>
+      </div>
+      <button
+        className="absolute top-5 right-5 text-muted text-sm z-10"
+        onClick={e => { e.stopPropagation(); onClose() }}
+      >
+        Fermer ✕
+      </button>
+    </div>
+  )
+}
+
 // ── Routing ──────────────────────────────────────────────────────────────────
 
 function TechniqueView({ id, onClose }: { id: string; onClose: () => void }) {
@@ -415,6 +533,7 @@ function TechniqueView({ id, onClose }: { id: string; onClose: () => void }) {
     case 'box':       return <BoxBreathing onClose={onClose} />
     case 'coherence': return <CoherenceTechnique onClose={onClose} />
     case '478':       return <Breathing478Technique onClose={onClose} />
+    case 'sedative':  return <SedativeTechnique onClose={onClose} />
     case 'grounding': return <GroundingTechnique onClose={onClose} />
     case 'cold':      return <ColdWaterTechnique onClose={onClose} />
     case 'muscle':    return <MuscleRelaxTechnique onClose={onClose} />
@@ -456,7 +575,9 @@ export default function Stress() {
         </div>
       </div>
 
-      {active && (
+      {active === 'bubbles' && <BubbleTechnique onClose={() => setActive(null)} />}
+
+      {active && active !== 'bubbles' && (
         <div
           className="fixed inset-0 bg-black/70 flex items-end justify-center z-50"
           onClick={e => { if (e.target === e.currentTarget) setActive(null) }}
