@@ -12,8 +12,7 @@ const TECHNIQUES = [
   { id: 'muscle',    name: 'Relâchement musculaire',  emoji: '💆', duration: '3 min',  desc: 'Contracter puis relâcher' },
   { id: 'walk',      name: 'Marche 5 minutes',         emoji: '🚶', duration: '5 min',  desc: 'Libère les tensions physiques' },
   { id: 'stop',      name: 'Technique STOP',           emoji: '✋', duration: '1 min',  desc: 'Pause de pleine conscience' },
-  { id: 'write',     name: 'Écriture de décharge',     emoji: '✍️', duration: '3 min',  desc: 'Vide ton esprit sans filtre' },
-  { id: 'bubbles',   name: 'Bulles de pensées',        emoji: '🫧', duration: '5 min',  desc: 'Observe et laisse partir' },
+  { id: 'bubbles',   name: 'Bulles de pensées',        emoji: '🫧', duration: '5 min',  desc: 'Écris une pensée · laisse-la s\'envoler' },
 ]
 
 const GROUNDING_STEPS = [
@@ -439,60 +438,6 @@ function StopTechnique({ onClose }: { onClose: () => void }) {
   )
 }
 
-function WriteTechnique({ onClose }: { onClose: () => void }) {
-  const TOTAL = 3 * 60
-  const [text, setText] = useState('')
-  const [started, setStarted] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(TOTAL)
-  const [done, setDone] = useState(false)
-
-  useEffect(() => {
-    if (!started || done) return
-    const t = setInterval(() => setTimeLeft(s => { if (s <= 1) { setDone(true); return 0 } return s - 1 }), 1000)
-    return () => clearInterval(t)
-  }, [started, done])
-
-  if (done) return (
-    <div className="p-8 text-center">
-      <div className="text-5xl mb-4">✅</div>
-      <p className="text-white font-semibold text-lg mb-2">C'est fait.</p>
-      <p className="text-muted text-sm mb-2">Ce que tu as écrit ne sera pas sauvegardé.</p>
-      <p className="text-muted text-sm mb-8">Tu peux fermer.</p>
-      <button onClick={onClose} className="bg-accent text-gray-900 font-semibold py-3 px-10 rounded-2xl">Fermer</button>
-    </div>
-  )
-
-  const mins = Math.floor(timeLeft / 60)
-  const secs = timeLeft % 60
-
-  return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold text-lg">Écriture de décharge</h3>
-        {started && <span className="text-muted font-mono text-sm">{mins}:{String(secs).padStart(2, '0')}</span>}
-      </div>
-      {!started ? (
-        <>
-          <p className="text-muted text-sm mb-6 leading-relaxed">
-            Écris sans filtre ni censure ce qui t'oppresse en ce moment. Ça ne sera pas sauvegardé — personne ne lira ça, pas même l'appli.
-          </p>
-          <button onClick={() => setStarted(true)} className="w-full bg-accent text-gray-900 font-semibold py-4 rounded-2xl">
-            Commencer (3 min)
-          </button>
-        </>
-      ) : (
-        <textarea
-          autoFocus
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Écris ici, sans filtre..."
-          className="w-full bg-surface border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:border-accent focus:outline-none resize-none"
-          rows={11}
-        />
-      )}
-    </div>
-  )
-}
 
 function SedativeTechnique({ onClose }: { onClose: () => void }) {
   const SNIFF1 = 2, SNIFF2 = 1, EXHALE = 7
@@ -545,67 +490,97 @@ function SedativeTechnique({ onClose }: { onClose: () => void }) {
   )
 }
 
-const FILL_DUR = 4000
-const FLOAT_DUR = 5500
-
 function BubbleTechnique({ onClose }: { onClose: () => void }) {
-  const [bubbles, setBubbles] = useState<{ id: number; x: number; phase: 'filling' | 'floating' }[]>([])
-  const nextId = useRef(0)
+  const FILL_DUR = 2500
+  const FLOAT_DUR = 5500
 
-  function addBubble(e: React.MouseEvent) {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100
+  const [text, setText] = useState('')
+  const [bubbles, setBubbles] = useState<{ id: number; x: number; y: number; text: string; phase: 'in' | 'float' }[]>([])
+  const nextId = useRef(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function launch() {
+    const val = text.trim()
+    if (!val) return
     const id = nextId.current++
-    setBubbles(b => [...b, { id, x: Math.max(8, Math.min(92, x)), phase: 'filling' }])
+    const x = 22 + Math.random() * 56
+    const y = 155 + Math.random() * 35
+    setBubbles(b => [...b, { id, x, y, text: val, phase: 'in' }])
+    setText('')
     setTimeout(() => {
-      setBubbles(b => b.map(bub => bub.id === id ? { ...bub, phase: 'floating' } : bub))
+      setBubbles(b => b.map(bub => bub.id === id ? { ...bub, phase: 'float' } : bub))
       setTimeout(() => setBubbles(b => b.filter(bub => bub.id !== id)), FLOAT_DUR)
     }, FILL_DUR)
+    inputRef.current?.focus()
   }
 
   return (
-    <div className="fixed inset-0 bg-base z-50 flex flex-col" onClick={addBubble}>
+    <div className="fixed inset-0 bg-base z-50 flex flex-col">
       <style>{`
-        @keyframes pulseFill {
-          0%, 100% { transform: scale(1);    opacity: 0.55; box-shadow: 0 0 12px rgba(78,204,163,0.15); }
-          50%       { transform: scale(1.09); opacity: 0.8;  box-shadow: 0 0 28px rgba(78,204,163,0.3);  }
+        @keyframes bubbleIn {
+          0%   { transform: scale(0.1); opacity: 0; }
+          65%  { transform: scale(1.1); opacity: 0.9; }
+          100% { transform: scale(1);  opacity: 0.85; }
         }
-        @keyframes floatUp {
-          0%   { transform: translateY(0)       scale(1);    opacity: 0.75; }
-          60%  { transform: translateY(-560px)  scale(1.08); opacity: 0.4;  }
-          100% { transform: translateY(-1100px) scale(0.6);  opacity: 0;    }
+        @keyframes bubbleFloat {
+          0%   { transform: translateY(0)      scale(1);    opacity: 0.85; }
+          65%  { transform: translateY(-520px) scale(1.04); opacity: 0.35; }
+          100% { transform: translateY(-950px) scale(0.65); opacity: 0;    }
         }
       `}</style>
-      <div className="flex-1 relative select-none">
+
+      <div className="flex-1 relative overflow-hidden pointer-events-none select-none">
         {bubbles.map(b => (
           <div
             key={b.id}
             style={{
               position: 'absolute',
-              bottom: 160,
-              left: `calc(${b.x}% - 45px)`,
-              width: 90,
-              height: 90,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(78,204,163,0.45) 0%, rgba(78,204,163,0.1) 100%)',
-              border: '1.5px solid rgba(78,204,163,0.4)',
-              animation: b.phase === 'filling'
-                ? `pulseFill ${FILL_DUR / 1000}s ease-in-out infinite`
-                : `floatUp ${FLOAT_DUR / 1000}s ease-out forwards`,
+              bottom: b.y,
+              left: `calc(${b.x}% - 80px)`,
+              width: 160,
+              borderRadius: 40,
+              background: 'radial-gradient(ellipse, rgba(78,204,163,0.30) 0%, rgba(78,204,163,0.06) 100%)',
+              border: '1.5px solid rgba(78,204,163,0.5)',
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: b.phase === 'in'
+                ? 'bubbleIn 0.65s cubic-bezier(0.34,1.56,0.64,1) forwards'
+                : `bubbleFloat ${FLOAT_DUR / 1000}s ease-out forwards`,
             }}
-          />
+          >
+            <p style={{ color: 'rgba(255,255,255,0.88)', fontSize: 13, textAlign: 'center', lineHeight: 1.45, wordBreak: 'break-word' }}>
+              {b.text}
+            </p>
+          </div>
         ))}
       </div>
-      <div className="px-6 pb-14 pt-4 text-center pointer-events-none">
-        <p className="text-white/90 font-semibold text-base mb-1">Touche l'écran</p>
-        <p className="text-muted text-sm">Mets une pensée dans chaque bulle. Laisse-la partir.</p>
+
+      <div className="px-5 pb-10 pt-4 border-t border-gray-800/60">
+        <p className="text-muted text-xs text-center mb-4">Écris une pensée · laisse-la partir</p>
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            autoFocus
+            value={text}
+            onChange={e => setText(e.target.value.slice(0, 80))}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); launch() } }}
+            placeholder="Une pensée, une peur, une tension…"
+            className="flex-1 bg-surface border border-gray-700 rounded-2xl px-4 py-3 text-white text-sm focus:border-accent/60 focus:outline-none"
+          />
+          <button
+            onClick={launch}
+            disabled={!text.trim()}
+            className="bg-accent text-gray-900 font-bold px-5 rounded-2xl text-xl disabled:opacity-25 transition-opacity"
+          >
+            ↑
+          </button>
+        </div>
+        <button className="w-full text-center text-muted text-sm mt-4 py-1" onClick={onClose}>
+          Fermer ✕
+        </button>
       </div>
-      <button
-        className="absolute top-5 right-5 text-muted text-sm z-10"
-        onClick={e => { e.stopPropagation(); onClose() }}
-      >
-        Fermer ✕
-      </button>
     </div>
   )
 }
@@ -623,7 +598,6 @@ function TechniqueView({ id, onClose }: { id: string; onClose: () => void }) {
     case 'muscle':    return <MuscleRelaxTechnique onClose={onClose} />
     case 'walk':      return <WalkTechnique onClose={onClose} />
     case 'stop':      return <StopTechnique onClose={onClose} />
-    case 'write':     return <WriteTechnique onClose={onClose} />
     default:          return null
   }
 }
