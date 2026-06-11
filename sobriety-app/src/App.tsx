@@ -2,7 +2,6 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useStore } from './store/useStore'
 import BottomNav from './components/BottomNav'
 import ReminderEngine from './components/ReminderEngine'
-import UpdateBanner from './components/UpdateBanner'
 import Onboarding from './screens/Onboarding'
 import Dashboard from './screens/Dashboard'
 import SOS from './screens/SOS'
@@ -29,7 +28,6 @@ function AppShell() {
 
   return (
     <>
-      <UpdateBanner />
       <ReminderEngine />
       <Routes>
         <Route path="/" element={<Dashboard />} />
