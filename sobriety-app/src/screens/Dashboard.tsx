@@ -200,7 +200,7 @@ export default function Dashboard() {
           <span className="text-3xl">🧘</span>
           <div className="flex-1">
             <p className="text-white font-semibold text-sm">Boîte à outils anti-stress</p>
-            <p className="text-muted text-xs mt-0.5">9 techniques · Respiration, ancrage, mouvement…</p>
+            <p className="text-muted text-xs mt-0.5">11 techniques · Respiration, ancrage, mouvement…</p>
           </div>
           <span className="text-muted text-sm">→</span>
         </button>
